@@ -1,1 +1,165 @@
+name: Build FISTF Tournament per macOS
 
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versione da buildare'
+        required: false
+        default: '2.0'
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout codice
+        uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Installa dipendenze
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pandas openpyxl numpy pillow psutil
+          
+      - name: Converti icona (da .ico a .icns per macOS)
+        run: |
+          if [ -f "icon.ico" ] && [ ! -f "icon.icns" ]; then
+            python -c "
+from PIL import Image
+import subprocess
+import os
+
+print('🔄 Conversione icona in corso...')
+
+# Crea cartella iconset
+os.makedirs('icon.iconset', exist_ok=True)
+
+# Apri l'icona
+img = Image.open('icon.ico')
+
+# Dimensioni necessarie per macOS
+sizes = [16, 32, 64, 128, 256, 512, 1024]
+
+print('   Creazione formati...')
+for size in sizes:
+    if size <= 1024:
+        resized = img.resize((size, size), Image.Resampling.LANCZOS)
+        resized.save(f'icon.iconset/icon_{size}x{size}.png')
+        print(f'   ✓ {size}x{size}')
+
+# Versioni per Retina
+for size in [16, 32, 64, 128, 256, 512]:
+    if size*2 <= 1024:
+        resized_2x = img.resize((size*2, size*2), Image.Resampling.LANCZOS)
+        resized_2x.save(f'icon.iconset/icon_{size}x{size}@2x.png')
+        print(f'   ✓ {size}x{size}@2x (Retina)')
+
+# Converti in formato icns (formato macOS)
+print('   Conversione in .icns...')
+subprocess.run(['iconutil', '-c', 'icns', 'icon.iconset'], check=True)
+
+# Pulizia
+print('   Pulizia...')
+os.system('rm -rf icon.iconset')
+
+print('✅ Icona convertita in icon.icns')
+"
+          fi
+          
+      - name: Build con PyInstaller
+        run: |
+          pyinstaller \
+            --windowed \
+            --onefile \
+            --name "FISTF Tournament" \
+            --icon "icon.icns" \
+            --add-data "logo.png:." \
+            --add-data "fistf_ko_engine.py:." \
+            --add-data "fistf_formulas_2_16.json:." \
+            --add-data "Categorie_ESEMPIO.xlsx:." \
+            --hidden-import pandas \
+            --hidden-import openpyxl \
+            --hidden-import numpy \
+            --hidden-import PIL \
+            --hidden-import PIL._tkinter_finder \
+            --hidden-import psutil \
+            --collect-all PIL \
+            gui_fistf_tk.py
+            
+      - name: Crea DMG (pacchetto installazione)
+        run: |
+          # Crea struttura DMG
+          mkdir -p dmg_temp
+          cp -r "dist/FISTF Tournament.app" dmg_temp/
+          ln -s /Applications dmg_temp/Applicazioni
+          
+          # Crea DMG
+          hdiutil create \
+            -volname "FISTF Tournament" \
+            -srcfolder dmg_temp \
+            -ov \
+            -format UDZO \
+            "FISTF_Tournament_macOS.dmg"
+            
+      - name: Crea ZIP semplice
+        run: |
+          cd dist
+          zip -r ../FISTF_Tournament_macOS.zip "FISTF Tournament.app"
+          cd ..
+          
+      - name: Crea file README per l'utente Mac
+        run: |
+          cat > README_MAC.txt << 'EOF'
+🎯 FISTF TOURNAMENT - VERSIONE MAC
+==================================
+
+📦 COSA HAI SCARICATO:
+Questo file contiene l'applicazione FISTF Tournament già pronta per macOS.
+NON è necessario installare Python o altre dipendenze.
+
+🚀 COME INSTALLARE:
+1. Decomprimi questo file ZIP
+2. Troverai "FISTF Tournament.app"
+3. Trascina l'app nella cartella "Applicazioni" del tuo Mac
+4. Fai doppio clic per avviarla
+
+🔓 PRIMO AVVIO (solo la prima volta):
+Se macOS dice che l'app non può essere aperta perché sviluppatore non verificato:
+- Vai in Preferenze di Sistema → Sicurezza e Privacy
+- Nella scheda Generale, clicca "Apri lo stesso"
+- Poi clicca "Apri" nella finestra di dialogo
+
+📝 INFO BUILD:
+- Versione: ${{ github.event.inputs.version || '2.0' }}
+- Data build: $(date)
+- Buildata con Python 3.11 e PyInstaller
+
+❓ PROBLEMI?
+Contatta lo sviluppatore per assistenza.
+
+🏆 BUON TORNEO!
+EOF
+          
+      - name: Upload DMG
+        uses: actions/upload-artifact@v3
+        with:
+          name: FISTF-Tournament-macOS-DMG
+          path: FISTF_Tournament_macOS.dmg
+          
+      - name: Upload ZIP
+        uses: actions/upload-artifact@v3
+        with:
+          name: FISTF-Tournament-macOS
+          path: FISTF_Tournament_macOS.zip
+          
+      - name: Upload README
+        uses: actions/upload-artifact@v3
+        with:
+          name: Istruzioni-Mac
+          path: README_MAC.txt
