@@ -7,10 +7,10 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       
@@ -24,8 +24,11 @@ jobs:
           echo "📂 Contenuto directory:"
           ls -la
           echo ""
-          echo "✅ File presenti:"
-          ls -la *.py *.json *.ico *.png *.xlsx || echo "⚠️ Alcuni file non trovati"
+          echo "✅ File Python:"
+          ls -la *.py || echo "⚠️ Nessun file .py"
+          echo ""
+          echo "✅ Altri file:"
+          ls -la *.json *.ico *.png *.xlsx || echo "⚠️ Alcuni file non trovati"
       
       - name: Build con PyInstaller
         run: |
@@ -37,7 +40,7 @@ jobs:
             echo "✅ Build completata"
             ls -la dist/
           else
-            echo "❌ Build fallita"
+            echo "❌ Build fallita - cartella dist non trovata"
             exit 1
           fi
       
@@ -48,13 +51,14 @@ jobs:
             zip -r ../FISTF_Tournament_macOS.zip "FISTF_Tournament.app"
             cd ..
             echo "✅ ZIP creato"
+            ls -la FISTF_Tournament_macOS.zip || echo "⚠️ ZIP non trovato"
           else
             echo "❌ Cartella dist non trovata"
             exit 1
           fi
       
       - name: Carica file
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: FISTF-Tournament-macOS
           path: FISTF_Tournament_macOS.zip
