@@ -24,36 +24,31 @@ jobs:
           echo "📂 Contenuto directory:"
           ls -la
           echo ""
-          echo "✅ File Python:"
-          ls -la *.py || echo "⚠️ Nessun file .py"
-          echo ""
-          echo "✅ Altri file:"
-          ls -la *.json *.ico *.png *.xlsx || echo "⚠️ Alcuni file non trovati"
+          echo "✅ File presenti:"
+          ls -la *.py *.json *.ico *.png *.xlsx || true
       
-      - name: Build con PyInstaller
+      - name: Build con PyInstaller (modalità onedir per macOS)
         run: |
-          pyinstaller --windowed --onefile --name "FISTF_Tournament" --icon "Icon.ico" --add-data "Logo.png:." --add-data "fistf_ko_engine.py:." --add-data "fistf_formulas_2_16.json:." --add-data "Categorie_ESEMPIO.xlsx:." --hidden-import pandas --hidden-import openpyxl --hidden-import numpy --hidden-import PIL --hidden-import psutil "GUI_fistf_tk.py"
+          pyinstaller --windowed --onedir --name "FISTF_Tournament" --icon "Icon.ico" --add-data "Logo.png:." --add-data "fistf_ko_engine.py:." --add-data "fistf_formulas_2_16.json:." --add-data "Categorie_ESEMPIO.xlsx:." --hidden-import pandas --hidden-import openpyxl --hidden-import numpy --hidden-import PIL --hidden-import psutil "GUI_fistf_tk.py"
       
       - name: Verifica build
         run: |
-          if [ -d "dist" ]; then
-            echo "✅ Build completata"
-            ls -la dist/
-          else
-            echo "❌ Build fallita - cartella dist non trovata"
-            exit 1
-          fi
+          echo "📂 Contenuto dist:"
+          ls -la dist/ || echo "❌ Cartella dist non trovata"
+          echo ""
+          echo "📂 Contenuto app bundle:"
+          ls -la "dist/FISTF_Tournament.app/" || echo "❌ App bundle non trovato"
       
-      - name: Crea ZIP
+      - name: Crea ZIP dell'app
         run: |
-          if [ -d "dist" ]; then
+          if [ -d "dist/FISTF_Tournament.app" ]; then
             cd dist
             zip -r ../FISTF_Tournament_macOS.zip "FISTF_Tournament.app"
             cd ..
-            echo "✅ ZIP creato"
-            ls -la FISTF_Tournament_macOS.zip || echo "⚠️ ZIP non trovato"
+            echo "✅ ZIP creato: FISTF_Tournament_macOS.zip"
+            ls -la FISTF_Tournament_macOS.zip
           else
-            echo "❌ Cartella dist non trovata"
+            echo "❌ App bundle non trovato!"
             exit 1
           fi
       
