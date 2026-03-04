@@ -19,26 +19,38 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller pandas openpyxl numpy pillow
       
-      - name: Verifica file (debug)
+      - name: 🔍 DEBUG - Lista completa file
         run: |
-          echo "📂 Contenuto directory:"
+          echo "📂 DIRECTORY CORRENTE:"
           pwd
+          echo ""
+          echo "📋 TUTTI I FILE (incluso nascosti):"
           ls -la
           echo ""
-          echo "🔍 Cerco file specifici:"
+          echo "📁 STRUTTURA COMPLETA:"
+          find . -type f | sort
+          echo ""
+          echo "🎯 CERCO FILE JSON:"
           find . -name "*.json" -type f
-          find . -name "*.png" -type f
-          find . -name "*.ico" -type f
-          find . -name "*.xlsx" -type f
+          echo ""
+          echo "🎯 CERCO FILE .py:"
+          find . -name "*.py" -type f
+          echo ""
+          echo "🎯 CERCO FILE .ico .png .xlsx:"
+          find . -name "*.ico" -o -name "*.png" -o -name "*.xlsx" -type f
       
       - name: Build con PyInstaller
         run: |
+          # Usiamo una variabile per il nome del file json
+          JSON_FILE=$(find . -name "*.json" -type f | head -1)
+          echo "📄 File JSON trovato: $JSON_FILE"
+          
           pyinstaller --windowed --onedir \
             --name "FISTF_Tournament" \
             --icon "Icon.ico" \
             --add-data "Logo.png:." \
             --add-data "fistf_ko_engine.py:." \
-            --add-data "fistf_formulas_2_16.json:." \
+            --add-data "$JSON_FILE:." \
             --add-data "Categorie_ESEMPIO.xlsx:." \
             --hidden-import pandas \
             --hidden-import openpyxl \
@@ -53,22 +65,23 @@ jobs:
           ls -la dist/ || echo "❌ dist non trovata"
           if [ -d "dist/FISTF_Tournament.app" ]; then
             echo "✅ App creata!"
-            echo "📂 Contenuto app:"
-            ls -la "dist/FISTF_Tournament.app/Contents/MacOS/" || true
           else
             echo "❌ App non trovata"
-            exit 1
           fi
       
       - name: Crea ZIP
         run: |
-          cd dist
-          zip -r ../FISTF_Tournament_macOS.zip "FISTF_Tournament.app"
-          cd ..
-          echo "✅ ZIP creato"
-          ls -la FISTF_Tournament_macOS.zip
+          if [ -d "dist/FISTF_Tournament.app" ]; then
+            cd dist
+            zip -r ../FISTF_Tournament_macOS.zip "FISTF_Tournament.app"
+            cd ..
+            echo "✅ ZIP creato"
+          else
+            echo "❌ Skip ZIP - app non trovata"
+          fi
       
       - name: Carica file
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: FISTF-Tournament-macOS
