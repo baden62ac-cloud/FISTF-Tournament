@@ -19,38 +19,54 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller pandas openpyxl numpy pillow
       
-      - name: Verifica file
+      - name: Verifica file (debug)
         run: |
           echo "📂 Contenuto directory:"
+          pwd
           ls -la
           echo ""
-          echo "✅ File presenti:"
-          ls -la *.py *.json *.ico *.png *.xlsx || true
+          echo "🔍 Cerco file specifici:"
+          find . -name "*.json" -type f
+          find . -name "*.png" -type f
+          find . -name "*.ico" -type f
+          find . -name "*.xlsx" -type f
       
-      - name: Build con PyInstaller (modalità onedir per macOS)
+      - name: Build con PyInstaller
         run: |
-          pyinstaller --windowed --onedir --name "FISTF_Tournament" --icon "Icon.ico" --add-data "Logo.png:." --add-data "fistf_ko_engine.py:." --add-data "fistf_formulas_2_16.json:." --add-data "Categorie_ESEMPIO.xlsx:." --hidden-import pandas --hidden-import openpyxl --hidden-import numpy --hidden-import PIL --hidden-import psutil "GUI_fistf_tk.py"
+          pyinstaller --windowed --onedir \
+            --name "FISTF_Tournament" \
+            --icon "Icon.ico" \
+            --add-data "Logo.png:." \
+            --add-data "fistf_ko_engine.py:." \
+            --add-data "fistf_formulas_2_16.json:." \
+            --add-data "Categorie_ESEMPIO.xlsx:." \
+            --hidden-import pandas \
+            --hidden-import openpyxl \
+            --hidden-import numpy \
+            --hidden-import PIL \
+            --hidden-import psutil \
+            "GUI_fistf_tk.py"
       
       - name: Verifica build
         run: |
           echo "📂 Contenuto dist:"
-          ls -la dist/ || echo "❌ Cartella dist non trovata"
-          echo ""
-          echo "📂 Contenuto app bundle:"
-          ls -la "dist/FISTF_Tournament.app/" || echo "❌ App bundle non trovato"
-      
-      - name: Crea ZIP dell'app
-        run: |
+          ls -la dist/ || echo "❌ dist non trovata"
           if [ -d "dist/FISTF_Tournament.app" ]; then
-            cd dist
-            zip -r ../FISTF_Tournament_macOS.zip "FISTF_Tournament.app"
-            cd ..
-            echo "✅ ZIP creato: FISTF_Tournament_macOS.zip"
-            ls -la FISTF_Tournament_macOS.zip
+            echo "✅ App creata!"
+            echo "📂 Contenuto app:"
+            ls -la "dist/FISTF_Tournament.app/Contents/MacOS/" || true
           else
-            echo "❌ App bundle non trovato!"
+            echo "❌ App non trovata"
             exit 1
           fi
+      
+      - name: Crea ZIP
+        run: |
+          cd dist
+          zip -r ../FISTF_Tournament_macOS.zip "FISTF_Tournament.app"
+          cd ..
+          echo "✅ ZIP creato"
+          ls -la FISTF_Tournament_macOS.zip
       
       - name: Carica file
         uses: actions/upload-artifact@v4
