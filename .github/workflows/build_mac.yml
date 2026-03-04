@@ -19,38 +19,49 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller pandas openpyxl numpy pillow
       
-      - name: 🔍 DEBUG - Lista completa file
+      - name: 🔍 DEBUG ESTREMO - Lista tutto
         run: |
+          echo "=================================="
           echo "📂 DIRECTORY CORRENTE:"
           pwd
+          echo "=================================="
           echo ""
-          echo "📋 TUTTI I FILE (incluso nascosti):"
+          echo "📋 LISTA COMPLETA (ls -la):"
           ls -la
+          echo "=================================="
           echo ""
-          echo "📁 STRUTTURA COMPLETA:"
+          echo "📁 ALBERO COMPLETO (find .):"
           find . -type f | sort
+          echo "=================================="
           echo ""
-          echo "🎯 CERCO FILE JSON:"
+          echo "🔍 CERCO .json:"
           find . -name "*.json" -type f
+          echo "=================================="
           echo ""
-          echo "🎯 CERCO FILE .py:"
+          echo "🔍 CERCO .py:"
           find . -name "*.py" -type f
+          echo "=================================="
           echo ""
-          echo "🎯 CERCO FILE .ico .png .xlsx:"
-          find . -name "*.ico" -o -name "*.png" -o -name "*.xlsx" -type f
+          echo "🔍 CERCO .ico:"
+          find . -name "*.ico" -type f
+          echo "=================================="
+          echo ""
+          echo "🔍 CERCO .png:"
+          find . -name "*.png" -type f
+          echo "=================================="
+          echo ""
+          echo "🔍 CERCO .xlsx:"
+          find . -name "*.xlsx" -type f
+          echo "=================================="
       
-      - name: Build con PyInstaller
+      - name: Build con PyInstaller (versione fissa)
         run: |
-          # Usiamo una variabile per il nome del file json
-          JSON_FILE=$(find . -name "*.json" -type f | head -1)
-          echo "📄 File JSON trovato: $JSON_FILE"
-          
           pyinstaller --windowed --onedir \
             --name "FISTF_Tournament" \
             --icon "Icon.ico" \
             --add-data "Logo.png:." \
             --add-data "fistf_ko_engine.py:." \
-            --add-data "$JSON_FILE:." \
+            --add-data "fistf_formulas_2_16.json:." \
             --add-data "Categorie_ESEMPIO.xlsx:." \
             --hidden-import pandas \
             --hidden-import openpyxl \
@@ -63,21 +74,15 @@ jobs:
         run: |
           echo "📂 Contenuto dist:"
           ls -la dist/ || echo "❌ dist non trovata"
-          if [ -d "dist/FISTF_Tournament.app" ]; then
-            echo "✅ App creata!"
-          else
-            echo "❌ App non trovata"
-          fi
       
-      - name: Crea ZIP
+      - name: Crea ZIP (se build riuscita)
+        if: success()
         run: |
           if [ -d "dist/FISTF_Tournament.app" ]; then
             cd dist
             zip -r ../FISTF_Tournament_macOS.zip "FISTF_Tournament.app"
             cd ..
             echo "✅ ZIP creato"
-          else
-            echo "❌ Skip ZIP - app non trovata"
           fi
       
       - name: Carica file
